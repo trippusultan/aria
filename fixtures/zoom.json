@@ -1,0 +1,34 @@
+[
+  {
+    "external_id": "zoom-8841-0926",
+    "title": "Northwind weekly",
+    "started_at": "2026-09-26T10:40:00.000Z",
+    "participants": [
+      { "name": "Ananya Shah", "email": "ananya.shah@northwindcap.com", "role": "attendee" },
+      { "name": "Rohan Mehta", "email": "rohan.mehta@example-bank.com", "role": "attendee" },
+      { "name": "{{USER_NAME}}", "email": "{{USER_EMAIL}}", "role": "attendee" }
+    ],
+    "transcript": "[00:00:04] Ananya Shah: Morning everyone, how was the long weekend?\n[00:00:09] {{USER_NAME}}: Good, thanks. Quiet for once.\n[00:03:12] Ananya Shah: On the facility, we are fine with the structure but the prepayment language still worries our credit team.\n[00:03:40] {{USER_NAME}}: Understood. I'll turn the term sheet around by Thursday with the prepayment cap we discussed.\n[00:04:02] Rohan Mehta: I want to see the cap language before it goes out, so loop me in.\n[00:04:15] {{USER_NAME}}: Will do. Rohan, can you confirm with compliance that the cap works for the SAR reporting side?\n[00:04:30] Rohan Mehta: Yes, I'll check with compliance and come back to you by Wednesday.\n[00:06:10] Ananya Shah: We could consider a step-down fee later, but not for this round.\n[00:07:45] Ananya Shah: Can you also send over the revised drawdown schedule?\n[00:07:52] {{USER_NAME}}: Sure, I will send the drawdown schedule tomorrow.\n[00:08:30] Ananya Shah: Great. Let's reconvene Friday with numbers.\n[00:08:36] {{USER_NAME}}: Sounds good, talk Friday."
+  },
+  {
+    "external_id": "zoom-8842-0925",
+    "title": "Credit Committee",
+    "started_at": "2026-09-25T08:00:00.000Z",
+    "participants": [
+      { "name": "Priya Nair", "email": "priya.nair@example-bank.com", "role": "attendee" },
+      { "name": "Amit Kulkarni", "email": "amit.k@example-bank.com", "role": "attendee" },
+      { "name": "{{USER_NAME}}", "email": "{{USER_EMAIL}}", "role": "attendee" }
+    ],
+    "transcript": "[00:00:02] Priya Nair: Let's start with the Kestrel Foods renewal.\n[00:01:20] Amit Kulkarni: The covenant pack is still missing the Q2 numbers.\n[00:01:35] Priya Nair: {{USER_FIRST}}, please get the updated covenant pack from Kestrel before Monday.\n[00:01:44] {{USER_NAME}}: Okay, I'll chase Kestrel for it today.\n[00:02:50] Priya Nair: I will close the KYC refresh on my side by end of week.\n[00:05:10] Amit Kulkarni: The weather in Pune has been awful this week.\n[00:05:30] Priya Nair: Status update: the Orion account is performing in line with plan."
+  },
+  {
+    "external_id": "zoom-8843-0924",
+    "title": "Treasury sync",
+    "started_at": "2026-09-24T12:00:00.000Z",
+    "participants": [
+      { "name": "Meera Iyer", "email": "meera.iyer@example-bank.com", "role": "attendee" },
+      { "name": "{{USER_NAME}}", "email": "{{USER_EMAIL}}", "role": "attendee" }
+    ],
+    "transcript": null
+  }
+]

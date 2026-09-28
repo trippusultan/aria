@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aria Docs</title>
+<meta name="description" content="Developer documentation for Aria: REST API reference, authentication, connectors, extraction and the assistant.">
+<link rel="stylesheet" href="../app.css">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js" defer></script>
+</head>
+<body class="docs">
+<a class="skip" href="#d-content">Skip to content</a>
+<header class="d-top">
+  <button class="d-menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="d-side">☰</button>
+  <a class="d-brand" href="#overview"><span class="logo" aria-hidden="true"></span>Aria <span>Docs</span></a>
+  <label class="d-search"><span class="sr">Search docs</span><input id="d-q" type="search" placeholder="Search docs  /" autocomplete="off"></label>
+  <nav class="d-links" aria-label="Site"><a href="#api-tasks">API</a><a href="../">Open app</a><button type="button" id="d-theme" class="d-theme">Theme</button></nav>
+</header>
+
+<div class="d-wrap">
+<nav id="d-side" class="d-side" aria-label="Documentation">
+  <p class="d-group">Get started</p>
+  <a href="#overview">Overview</a>
+  <a href="#quickstart">Quickstart</a>
+  <a href="#authentication">Authentication</a>
+  <a href="#errors">Errors &amp; limits</a>
+  <p class="d-group">Concepts</p>
+  <a href="#concepts">Tasks, suggestions &amp; sources</a>
+  <a href="#lifecycle">Status lifecycle</a>
+  <a href="#privacy">Privacy &amp; security</a>
+  <p class="d-group">API reference</p>
+  <a href="#api-auth">Auth &amp; account</a>
+  <a href="#api-tasks">Tasks</a>
+  <a href="#api-suggestions">Suggestions</a>
+  <a href="#api-people">People</a>
+  <a href="#api-sources">Sources</a>
+  <a href="#api-connectors">Connectors</a>
+  <a href="#api-assistant">Assistant</a>
+  <a href="#api-settings">Settings &amp; notifications</a>
+  <a href="#api-export">Export, audit &amp; admin</a>
+  <p class="d-group">Guides</p>
+  <a href="#guide-connectors">Connecting Zoom, Gmail &amp; Outlook</a>
+  <a href="#guide-extraction">How extraction works</a>
+  <a href="#guide-assistant">Assistant grounding</a>
+  <a href="#self-hosting">Self-hosting &amp; configuration</a>
+</nav>
+
+<main id="d-content" class="d-main" tabindex="-1">
+
+<section id="overview" data-title="Overview">
+<p class="d-eyebrow">Get started</p>
+<h1>Aria developer documentation</h1>
+<p class="d-lead">Aria is a personal action assistant. It reads the meetings and mail a person connects, drafts action items with evidence, and keeps confirmed work against the people involved. This site documents its REST API and how the pieces behave.</p>
+<div class="d-cards">
+  <a class="d-card" href="#quickstart"><strong>Quickstart</strong><span>Sign in, connect demo data and list tasks in five requests.</span></a>
+  <a class="d-card" href="#api-tasks"><strong>API reference</strong><span>Every endpoint, parameter and response shape.</span></a>
+  <a class="d-card" href="#guide-extraction"><strong>Extraction</strong><span>What counts as an action item, and how excerpts stay verbatim.</span></a>
+  <a class="d-card" href="#privacy"><strong>Privacy model</strong><span>Isolation, encryption at rest and what admins can never see.</span></a>
+</div>
+<h2 id="principles">Design principles</h2>
+<ul>
+  <li><strong>Confirm before commit.</strong> Extracted items are <em>suggestions</em> until the user accepts them. The assistant only proposes changes.</li>
+  <li><strong>Source is sacred.</strong> Every captured task links to the meeting or email and a verbatim excerpt.</li>
+  <li><strong>Private by default.</strong> Every record belongs to one user. There is no org-wide content API.</li>
+  <li><strong>Precision over coverage.</strong> The extractor abstains when unsure.</li>
+</ul>
+<h2 id="base-url">Base URL</h2>
+<p>All endpoints are relative to the Aria host, for example <code>http://localhost:4180</code>. Requests and responses are JSON unless an endpoint says otherwise.</p>
+</section>
+
+<section id="quickstart" data-title="Quickstart">
+<p class="d-eyebrow">Get started</p>
+<h1>Quickstart</h1>
+<p class="d-lead">Run Aria locally, create an account, pull in demo meetings and mail, and read back the suggested actions.</p>
+<h2 id="qs-run">1. Run the server</h2>
+<p>Aria needs Node 22.13 or newer and has no dependencies.</p>
+<pre><code class="lang-bash">cd aria
+npm start          # http://localhost:4180</code></pre>
+<h2 id="qs-signup">2. Create an account</h2>
+<p>Sessions are cookies, so keep a cookie jar. Every request with a body must send <code>Content-Type: application/json</code>.</p>
+<pre><code class="lang-bash">curl -c jar -b jar http://localhost:4180/api/auth/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"sam@example-bank.test","password":"choose-a-long-one","name":"Sam Carter"}'</code></pre>
+<h2 id="qs-connect">3. Connect demo sources</h2>
+<p>Without OAuth credentials, connectors run in <em>demo</em> mode and ingest the built-in fixtures. Connect a calendar first so meetings get attendees.</p>
+<pre><code class="lang-bash">for t in gcal zoom gmail; do
+  curl -c jar -b jar -X POST http://localhost:4180/api/connectors/$t/connect \
+    -H 'Content-Type: application/json' -d '{}'
+done</code></pre>
+<h2 id="qs-inbox">4. Read the inbox</h2>
+<pre><code class="lang-bash">curl -b jar http://localhost:4180/api/suggestions</code></pre>
+<pre><code class="lang-json">[{
+  "id": 1, "confidence": 0.9, "state": "pending",
+  "source": { "id": 1, "type": "meeting", "title": "Northwind weekly", "started_at": "2026-09-26T10:40:00.000Z" },
+  "payload": {
+    "title": "Send revised term sheet with prepayment cap",
+    "owner": "user", "direction": "i_owe",
+    "stakeholders": [{ "name": "Ananya Shah", "email": "ananya.shah@northwindcap.com", "unverified": false, "person_id": 1 }],
+    "due": { "date": "2026-10-01", "span": "by Thursday" },
+    "excerpt": "I'll turn the term sheet around by Thursday with the prepayment cap we discussed.",
+    "confidence": 0.9, "rationale": "User made an explicit first-person commitment"
+  }
+}]</code></pre>
+<h2 id="qs-accept">5. Accept one and list tasks</h2>
+<pre><code class="lang-bash">curl -b jar -X POST http://localhost:4180/api/suggestions/1/accept \
+  -H 'Content-Type: application/json' -d '{}'
+curl -b jar http://localhost:4180/api/tasks</code></pre>
+<p class="d-note">Next: read <a href="#concepts">the core concepts</a> or jump to the <a href="#api-tasks">Tasks API</a>.</p>
+</section>
+
+<section id="authentication" data-title="Authentication">
+<p class="d-eyebrow">Get started</p>
+<h1>Authentication</h1>
+<p class="d-lead">Aria uses session cookies. There are no API keys: every call acts as the signed-in user and can only see that user's data.</p>
+<h2 id="auth-cookie">Session cookie</h2>
+<ul>
+  <li><code>POST /api/auth/signup</code> or <code>/api/auth/login</code> sets <code>aria_sid</code> (HttpOnly, SameSite=Lax; Secure when <code>ARIA_SECURE_COOKIE</code> is set).</li>
+  <li>Sessions expire after <strong>12 hours idle</strong>. Each authenticated response refreshes the cookie.</li>
+  <li>List and revoke sessions with <a href="#api-auth">/api/sessions</a>.</li>
+</ul>
+<h2 id="auth-csrf">Request requirements</h2>
+<table><thead><tr><th>Rule</th><th>Why</th></tr></thead><tbody>
+<tr><td>Requests with a body must be <code>Content-Type: application/json</code></td><td>Blocks cross-site form posts</td></tr>
+<tr><td>A cross-origin <code>Origin</code> header gets 403</td><td>CSRF defence alongside SameSite</td></tr>
+<tr><td>Bodies are capped at 1&nbsp;MB</td><td>Abuse protection</td></tr>
+</tbody></table>
+<p>An unauthenticated request to any <code>/api/*</code> route returns <code>401 {"error": "..."}</code>.</p>
+</section>
+
+<section id="errors" data-title="Errors &amp; limits">
+<p class="d-eyebrow">Get started</p>
+<h1>Errors &amp; limits</h1>
+<p class="d-lead">Errors are JSON objects with one field, <code>error</code>, and a matching HTTP status.</p>
+<pre><code class="lang-json">{ "error": "At least one stakeholder is required" }</code></pre>
+<table><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>400</code></td><td>Validation failed. The message names the field.</td></tr>
+<tr><td><code>401</code></td><td>Not signed in, or the session expired.</td></tr>
+<tr><td><code>403</code></td><td>Cross-origin request, or not an admin for admin routes.</td></tr>
+<tr><td><code>404</code></td><td>Not found. This is also what you get for another user's record: Aria never confirms that it exists.</td></tr>
+<tr><td><code>409</code></td><td>Conflict, for example an email already registered or an assistant proposal already applied.</td></tr>
+<tr><td><code>413</code></td><td>Body over 1&nbsp;MB.</td></tr>
+<tr><td><code>429</code></td><td>Rate limited. See below.</td></tr>
+</tbody></table>
+<h2 id="rate-limits">Rate limits</h2>
+<table><thead><tr><th>Endpoints</th><th>Limit per IP</th></tr></thead><tbody>
+<tr><td><code>/api/auth/signup</code>, <code>/api/auth/login</code></td><td>20 per 15 minutes</td></tr>
+<tr><td><code>/api/export/*</code></td><td>20 per hour</td></tr>
+</tbody></table>
+<h2 id="pagination">Pagination</h2>
+<p>List endpoints are <strong>not paginated</strong>: they return the user's full set, already filtered by your query. Aria holds one person's work, typically hundreds of tasks, not millions. Two lists are capped at the newest entries:</p>
+<table><thead><tr><th>Endpoint</th><th>Returns</th></tr></thead><tbody>
+<tr><td><code>GET /api/notifications</code></td><td>Newest 100</td></tr>
+<tr><td><code>GET /api/audit</code>, <code>GET /api/admin/audit</code></td><td>Newest 500</td></tr>
+</tbody></table>
+<p>Use filters (<code>status</code>, <code>due</code>, <code>person</code>, <code>q</code>) rather than fetching everything and filtering client-side.</p>
+<h2 id="versioning">Versioning</h2>
+<p>The API is <strong>pre-1.0 and unversioned</strong>: paths have no <code>/v1</code> prefix, and shapes may change between releases. <code>CONTRACT.md</code> in the repository is the binding spec. Responses may gain fields; clients should ignore fields they don't know.</p>
+</section>
+
+<section id="concepts" data-title="Tasks, suggestions &amp; sources">
+<p class="d-eyebrow">Concepts</p>
+<h1>Tasks, suggestions &amp; sources</h1>
+<p class="d-lead">Four objects carry the whole product.</p>
+<table><thead><tr><th>Object</th><th>What it is</th></tr></thead><tbody>
+<tr><td><strong>Source</strong></td><td>A meeting, email or pasted text Aria processed. Holds participants and the raw text, encrypted.</td></tr>
+<tr><td><strong>Suggestion</strong></td><td>A candidate action the model found in a source, with a verbatim excerpt and a confidence. It is not work yet.</td></tr>
+<tr><td><strong>Task</strong></td><td>Confirmed work: title, status, direction, due date, stakeholders, notes, activity, and a link to its source.</td></tr>
+<tr><td><strong>Person</strong></td><td>A stakeholder. Resolved from calendar attendees and email headers, otherwise marked <code>unverified</code>.</td></tr>
+</tbody></table>
+<h2 id="direction">Direction</h2>
+<p>Every task records who owes whom: <code>i_owe</code> (the user owes the stakeholder), <code>they_owe</code>, or <code>unclear</code>. When the model can't tell who owns an item it says <code>owner: "unclear"</code> rather than guessing.</p>
+<h2 id="task-object">The Task object</h2>
+<pre><code class="lang-json">{
+  "id": 12, "title": "Send revised term sheet with prepayment cap", "body": "",
+  "status": "open", "direction": "i_owe", "due_at": "2026-10-01", "priority": null,
+  "tags": [], "visibility": "private",
+  "stakeholders": [{ "id": 1, "display_name": "Ananya Shah", "unverified": false, "role": "counterparty" }],
+  "source": { "id": 1, "type": "meeting", "title": "Northwind weekly", "started_at": "2026-09-26T10:40:00.000Z" },
+  "excerpt": { "text": "I'll turn the term sheet around by Thursday…", "start_offset": 212 },
+  "notes_count": 1, "last_note": "Legal wants to see the cap language first",
+  "created_at": "…", "updated_at": "…"
+}</code></pre>
+</section>
+
+<section id="lifecycle" data-title="Status lifecycle">
+<p class="d-eyebrow">Concepts</p>
+<h1>Status lifecycle</h1>
+<table><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><em>suggested</em></td><td>Only exists as a pending suggestion. Never a task status.</td></tr>
+<tr><td><code>open</code></td><td>Accepted; not started.</td></tr>
+<tr><td><code>in_progress</code></td><td>Being worked on.</td></tr>
+<tr><td><code>waiting</code></td><td>Blocked on a stakeholder.</td></tr>
+<tr><td><code>completed</code></td><td>Done. Kept for history and search.</td></tr>
+<tr><td><code>cancelled</code></td><td>No longer relevant. Kept for history.</td></tr>
+</tbody></table>
+<p><code>GET /api/tasks</code> without a <code>status</code> filter returns everything except completed and cancelled. Every change is written to the task's activity log.</p>
+</section>
+
+<section id="privacy" data-title="Privacy &amp; security">
+<p class="d-eyebrow">Concepts</p>
+<h1>Privacy &amp; security</h1>
+<p class="d-lead">Aria is built for regulated work. These guarantees are enforced in the API, not only in the UI.</p>
+<ul>
+  <li><strong>Isolation.</strong> Every record is keyed by user. A request for another user's record returns <code>404</code>.</li>
+  <li><strong>Encryption at rest.</strong> Source text, excerpts, suggestion payloads, notes, assistant threads and connector tokens are encrypted with AES-256-GCM under a per-user key. Deleting the account destroys the key.</li>
+  <li><strong>Admins see metadata only.</strong> Seats, connector status, counts and admin-action audit. No admin endpoint returns titles, notes, excerpts or text.</li>
+  <li><strong>Read-only connectors.</strong> Aria never sends mail or writes to calendars.</li>
+  <li><strong>Delete means delete.</strong> A deleted source never returns on the next sync. Raw text is wiped after the retention window (default 90 days).</li>
+  <li><strong>No autonomous actions.</strong> Assistant changes require an explicit confirm call.</li>
+</ul>
+</section>
+
+<section id="api-auth" data-title="Auth &amp; account" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>Auth &amp; account</h1>
+<div class="ep" id="post-signup"><h2><span class="m post">POST</span><code>/api/auth/signup</code></h2>
+<p>Create an account and start a session. The admin role goes only to emails the operator lists in <code>ARIA_ADMIN_EMAILS</code>.</p>
+<table><thead><tr><th>Body</th><th>Type</th><th></th></tr></thead><tbody>
+<tr><td><code>email</code></td><td>string</td><td>Required</td></tr><tr><td><code>password</code></td><td>string</td><td>8–200 characters</td></tr><tr><td><code>name</code></td><td>string</td><td>Required, ≤100</td></tr></tbody></table>
+<p>Returns <code>{ user }</code> and sets the session cookie. <code>409</code> if the email exists.</p></div>
+<div class="ep" id="post-login"><h2><span class="m post">POST</span><code>/api/auth/login</code></h2><p>Body <code>{ email, password }</code>. Returns <code>{ user }</code> and sets the cookie. Rate limited.</p></div>
+<div class="ep" id="post-logout"><h2><span class="m post">POST</span><code>/api/auth/logout</code></h2><p>Ends the current session.</p></div>
+<div class="ep" id="get-me"><h2><span class="m get">GET</span><code>/api/me</code></h2><p>The signed-in user plus home-screen counts.</p>
+<pre><code class="lang-json">{ "user": { "id": 1, "email": "sam@example-bank.test", "name": "Sam Carter", "role": "admin" },
+  "counts": { "open": 3, "waiting": 0, "overdue": 0, "suggested": 3 }, "demo": true }</code></pre></div>
+<div class="ep" id="get-sessions"><h2><span class="m get">GET</span><code>/api/sessions</code></h2><p>Devices signed in: <code>[{ id, user_agent, ip, created_at, last_seen_at, current }]</code>.</p></div>
+<div class="ep" id="delete-session"><h2><span class="m delete">DELETE</span><code>/api/sessions/:id</code></h2><p>Revoke one session.</p></div>
+<div class="ep" id="delete-account"><h2><span class="m delete">DELETE</span><code>/api/account</code></h2><p>Body <code>{ password }</code>. Removes every task, note, source, person and connector token for the user and destroys their encryption key. Audit events are kept without content.</p></div>
+</section>
+
+<section id="api-tasks" data-title="Tasks" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>Tasks</h1>
+<div class="ep" id="get-tasks"><h2><span class="m get">GET</span><code>/api/tasks</code></h2>
+<p>List the user's tasks. Filters combine. Sorted by direction, then due date (empty last), then most recently updated.</p>
+<table><thead><tr><th>Query</th><th>Values</th></tr></thead><tbody>
+<tr><td><code>status</code></td><td>Comma list of <code>open,in_progress,waiting,completed,cancelled</code>. Default: all except completed/cancelled.</td></tr>
+<tr><td><code>person</code></td><td>Person id</td></tr>
+<tr><td><code>source_type</code></td><td><code>meeting</code> · <code>email</code> · <code>manual</code></td></tr>
+<tr><td><code>due</code></td><td><code>overdue</code> · <code>today</code> · <code>week</code> · <code>none</code>, using the user's timezone</td></tr>
+<tr><td><code>direction</code></td><td><code>i_owe</code> · <code>they_owe</code> · <code>unclear</code></td></tr>
+<tr><td><code>tag</code></td><td>Tag text</td></tr>
+<tr><td><code>q</code></td><td>Search across title, notes, stakeholder names and source title</td></tr>
+</tbody></table>
+<pre><code class="lang-bash">curl -b jar 'http://localhost:4180/api/tasks?status=open,waiting&amp;due=week'</code></pre></div>
+<div class="ep" id="post-tasks"><h2><span class="m post">POST</span><code>/api/tasks</code></h2>
+<p>Create a task by hand. Body: <code>title</code> (required), <code>body</code>, <code>direction</code>, <code>due_at</code> (YYYY-MM-DD), <code>priority</code> (<code>low|med|high</code>), <code>tags</code>, <code>stakeholders</code> (<code>[{person_id}]</code> or <code>[{name}]</code>; a new name creates an unverified person), <code>source_id</code>.</p></div>
+<div class="ep" id="get-task"><h2><span class="m get">GET</span><code>/api/tasks/:id</code></h2><p>A task plus <code>notes: [{id, body, created_at}]</code> and <code>activity: [{verb, from_value, to_value, at, actor}]</code>.</p></div>
+<div class="ep" id="patch-task"><h2><span class="m patch">PATCH</span><code>/api/tasks/:id</code></h2><p>Update any of <code>title, body, status, direction, due_at, priority, tags, stakeholders</code>. Send <code>null</code> to clear <code>due_at</code> or <code>priority</code>. Each change is logged.</p>
+<pre><code class="lang-bash">curl -b jar -X PATCH http://localhost:4180/api/tasks/12 \
+  -H 'Content-Type: application/json' -d '{"status":"completed"}'</code></pre></div>
+<div class="ep" id="post-note"><h2><span class="m post">POST</span><code>/api/tasks/:id/notes</code></h2><p>Append a note: <code>{ body }</code>. Notes can't be edited or deleted.</p></div>
+<div class="ep" id="post-duplicate"><h2><span class="m post">POST</span><code>/api/tasks/:id/duplicate</code></h2><p>Copy a task. Returns the new task.</p></div>
+<div class="ep" id="delete-task"><h2><span class="m delete">DELETE</span><code>/api/tasks/:id</code></h2><p>Delete a task.</p></div>
+</section>
+
+<section id="api-suggestions" data-title="Suggestions" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>Suggestions</h1>
+<p>The inbox: candidate actions waiting for a human decision. A rejected suggestion never becomes a task.</p>
+<div class="ep" id="get-suggestions"><h2><span class="m get">GET</span><code>/api/suggestions</code></h2><p>Pending, not snoozed, highest confidence first. See the <a href="#qs-inbox">example payload</a>.</p></div>
+<div class="ep" id="post-accept"><h2><span class="m post">POST</span><code>/api/suggestions/:id/accept</code></h2><p>Turn a suggestion into an <code>open</code> task. Optional <code>edits: {title, direction, due_at, stakeholders, body}</code>. <code>400</code> if no stakeholder would remain.</p></div>
+<div class="ep" id="post-reject"><h2><span class="m post">POST</span><code>/api/suggestions/:id/reject</code></h2><p>Optional <code>reason</code>: <code>not_action</code> or <code>never_happened</code>. Rejected titles teach this user's extractor what isn't an action.</p></div>
+<div class="ep" id="post-merge"><h2><span class="m post">POST</span><code>/api/suggestions/:id/merge</code></h2><p>Body <code>{ task_id }</code>. Appends the excerpt as a note on an existing task.</p></div>
+<div class="ep" id="post-snooze"><h2><span class="m post">POST</span><code>/api/suggestions/:id/snooze</code></h2><p>Body <code>{ hours }</code>. Hidden until then.</p></div>
+<div class="ep" id="post-bulk"><h2><span class="m post">POST</span><code>/api/suggestions/bulk-accept</code></h2><p>Accept every pending suggestion at or above the user's <code>high_threshold</code> (default 0.85) in one transaction. Invalid items are skipped. Returns <code>{ accepted }</code>.</p></div>
+</section>
+
+<section id="api-people" data-title="People" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>People</h1>
+<div class="ep" id="get-people"><h2><span class="m get">GET</span><code>/api/people</code></h2><p><code>[{ id, display_name, emails, org_name, unverified, open, waiting, done, last_interaction }]</code></p></div>
+<div class="ep" id="get-person"><h2><span class="m get">GET</span><code>/api/people/:id</code></h2><p>A person with their <code>tasks</code> and <code>sources</code>.</p></div>
+<div class="ep" id="patch-person"><h2><span class="m patch">PATCH</span><code>/api/people/:id</code></h2><p>Update <code>display_name, emails, org_name, unverified</code>.</p></div>
+<div class="ep" id="post-link"><h2><span class="m post">POST</span><code>/api/people/:id/link</code></h2><p>Body <code>{ target_id }</code>. Merges an unverified person into a known one. This can't be undone.</p></div>
+</section>
+
+<section id="api-sources" data-title="Sources" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>Sources</h1>
+<div class="ep" id="get-sources"><h2><span class="m get">GET</span><code>/api/sources</code></h2><p><code>[{ id, type, title, started_at, participants, processing_status, last_error, suggestion_count, task_count, mode }]</code>. <code>processing_status</code> is <code>pending</code>, <code>done</code>, <code>failed</code> or <code>no_transcript</code>.</p></div>
+<div class="ep" id="get-source"><h2><span class="m get">GET</span><code>/api/sources/:id</code></h2><p>A source with its decrypted <code>text</code> (owner only), <code>suggestions</code> and <code>tasks</code>.</p></div>
+<div class="ep" id="post-source"><h2><span class="m post">POST</span><code>/api/sources</code></h2><p>Add pasted text or a transcript and run extraction.</p>
+<pre><code class="lang-bash">curl -b jar http://localhost:4180/api/sources -H 'Content-Type: application/json' -d '{
+  "type": "manual", "title": "Call with Raj",
+  "participants": [{ "name": "Raj Patel", "email": "raj@example.test" }],
+  "text": "[00:01:10] Raj Patel: Can you send the KYC pack by Friday?"
+}'</code></pre></div>
+<div class="ep" id="post-reprocess"><h2><span class="m post">POST</span><code>/api/sources/:id/reprocess</code></h2><p>Run extraction again. Optional <code>hint</code>, for example <code>"anything I owe Raj"</code>.</p></div>
+<div class="ep" id="delete-source"><h2><span class="m delete">DELETE</span><code>/api/sources/:id</code></h2><p>Deletes the source and its pending suggestions. Accepted tasks are kept. The item is never re-ingested.</p></div>
+<div class="ep" id="get-raw"><h2><span class="m get">GET</span><code>/api/sources/:id/raw</code></h2><p>Download the raw text. Audited.</p></div>
+<div class="ep" id="get-recap"><h2><span class="m get">GET</span><code>/api/sources/:id/recap</code></h2><p>Markdown recap of the accepted items from this source.</p></div>
+</section>
+
+<section id="api-connectors" data-title="Connectors" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>Connectors</h1>
+<p>Types: <code>zoom</code>, <code>gmail</code>, <code>outlook</code>, <code>gcal</code>, <code>mscal</code>.</p>
+<div class="ep" id="get-connectors"><h2><span class="m get">GET</span><code>/api/connectors</code></h2><p><code>[{ type, label, status, mode, configured, setup, scopes, last_sync_at, last_error }]</code>. <code>mode</code> is <code>oauth</code>, <code>demo</code> (sample data) or <code>null</code>. When <code>configured</code> is false, <code>setup</code> lists the env vars, redirect URI, console link and scopes needed.</p></div>
+<div class="ep" id="post-connect"><h2><span class="m post">POST</span><code>/api/connectors/:type/connect</code></h2><p>Returns <code>{ redirect }</code>: send the user there. The provider returns to <code>/oauth/:type/callback</code>. Returns <code>409</code> when the provider is not configured on the server. It never falls back to sample data.</p></div>
+<div class="ep" id="post-sample"><h2><span class="m post">POST</span><span class="m delete">DELETE</span><code>/api/sample-data</code></h2><p>Load fictional meetings and email (optional <code>{ types }</code>, default <code>gcal, zoom, gmail</code>), or remove them. Removing keeps tasks you accepted. Loading returns <code>409</code> if a real account of that type is connected.</p></div>
+<div class="ep" id="post-sync"><h2><span class="m post">POST</span><code>/api/connectors/:type/sync</code></h2><p>Sync now. Connected connectors also sync every 60&nbsp;s.</p></div>
+<div class="ep" id="delete-connector"><h2><span class="m delete">DELETE</span><code>/api/connectors/:type</code></h2><p>Revoke. Tokens are wiped and ingest stops immediately, including a sync already in progress.</p></div>
+</section>
+
+<section id="api-assistant" data-title="Assistant" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>Assistant</h1>
+<p>A query and drafting layer over the user's own tasks and sources. It never changes data on its own.</p>
+<div class="ep" id="post-assistant"><h2><span class="m post">POST</span><code>/api/assistant</code></h2><p>Body <code>{ message, thread_id? }</code>.</p>
+<pre><code class="lang-json">{
+  "thread_id": 4,
+  "reply": "Mark this task as completed? Nothing changes until you confirm.\n• Send revised term sheet with prepayment cap — due Thu 1 Oct · Zoom · Northwind weekly [#1]",
+  "citations": [{ "task_id": 1, "title": "Send revised term sheet with prepayment cap", "source_title": "Northwind weekly" }],
+  "proposals": [{ "id": "b6208c1d7aa3", "action": "set_status", "task_id": 1, "args": { "status": "completed" },
+                  "label": "Mark 'Send revised term sheet with prepayment cap' as completed" }]
+}</code></pre>
+<p>Proposal actions: <code>set_status</code>, <code>add_note</code>, <code>set_due</code>, <code>create_task</code>.</p></div>
+<div class="ep" id="post-confirm"><h2><span class="m post">POST</span><code>/api/assistant/confirm</code></h2><p>Body <code>{ thread_id, proposal_id }</code>. Applies the proposal and returns <code>{ ok, task }</code>. This is the only way an assistant change happens. A second confirm returns <code>409</code>.</p></div>
+<div class="ep" id="get-thread"><h2><span class="m get">GET</span><code>/api/assistant/threads/:id</code></h2><p>The stored conversation.</p></div>
+</section>
+
+<section id="api-settings" data-title="Settings &amp; notifications" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>Settings &amp; notifications</h1>
+<div class="ep" id="settings"><h2><span class="m get">GET</span><span class="m patch">PATCH</span><code>/api/settings</code></h2>
+<table><thead><tr><th>Field</th><th>Default</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>timezone</code></td><td>UTC</td><td>IANA name; drives due dates and "today"</td></tr>
+<tr><td><code>low_floor</code></td><td>0.55</td><td>Candidates below this are dropped</td></tr>
+<tr><td><code>high_threshold</code></td><td>0.85</td><td>Bulk-accept and auto-promote level</td></tr>
+<tr><td><code>auto_promote</code></td><td>false</td><td>Skip the inbox for high-confidence items</td></tr>
+<tr><td><code>lookback_days</code></td><td>14</td><td>Mail history on first connect, ≤90</td></tr>
+<tr><td><code>excluded_labels</code> / <code>excluded_calendars</code></td><td>[]</td><td>Never ingested</td></tr>
+<tr><td><code>retention_days</code></td><td>90</td><td>Raw text kept 7–365 days after processing</td></tr>
+<tr><td><code>digest_time</code> · <code>digest_email</code> · <code>waiting_days</code></td><td>08:00 · true · 5</td><td>Morning digest</td></tr>
+<tr><td><code>bot_auto_invite</code> · <code>push_opt_in</code></td><td>false · false</td><td></td></tr>
+<tr><td><code>external_ai</code></td><td>false</td><td>Opt in to Jev (and Claude, if configured). Off means no data leaves the server.</td></tr>
+</tbody></table></div>
+<div class="ep" id="get-notifications"><h2><span class="m get">GET</span><code>/api/notifications</code></h2><p><code>[{ id, kind, text, link, created_at, read }]</code>. Mark all read with <code>POST /api/notifications/read</code>.</p></div>
+<div class="ep" id="get-digest"><h2><span class="m get">GET</span><code>/api/digest</code></h2><p><code>{ overdue, due_today, waiting_stale }</code>, each a list of tasks.</p></div>
+</section>
+
+<section id="api-export" data-title="Export, audit &amp; admin" class="api">
+<p class="d-eyebrow">API reference</p>
+<h1>Export, audit &amp; admin</h1>
+<div class="ep" id="get-csv"><h2><span class="m get">GET</span><code>/api/export/tasks.csv</code></h2><p>All tasks as CSV. Cells that start with <code>= + - @</code> are escaped against spreadsheet formula injection.</p></div>
+<div class="ep" id="get-json"><h2><span class="m get">GET</span><code>/api/export/all.json</code></h2><p>A portable bundle of the user's data.</p></div>
+<div class="ep" id="get-audit"><h2><span class="m get">GET</span><code>/api/audit</code></h2><p>The user's own audit trail: <code>[{ action, object, at, ip }]</code>.</p></div>
+<div class="ep" id="get-admin"><h2><span class="m get">GET</span><code>/api/admin/seats</code> · <code>/api/admin/audit</code></h2><p>Admins only. Seats with connector status and task <em>counts</em>, and the admin-action audit. No content, ever.</p></div>
+</section>
+
+<section id="guide-connectors" data-title="Connecting Zoom, Gmail &amp; Outlook">
+<p class="d-eyebrow">Guides</p>
+<h1>Connecting Zoom, Gmail &amp; Outlook</h1>
+<p class="d-lead">Unconfigured connectors show setup steps in Settings. Sample data is loaded only when you ask for it.</p>
+<table><thead><tr><th>Provider</th><th>Env vars</th><th>Scopes (read-only)</th></tr></thead><tbody>
+<tr><td>Zoom</td><td><code>ZOOM_CLIENT_ID</code>, <code>ZOOM_CLIENT_SECRET</code></td><td><code>cloud_recording:read</code>, <code>user:read</code></td></tr>
+<tr><td>Google (Gmail, Calendar)</td><td><code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code></td><td><code>gmail.readonly</code>, <code>calendar.readonly</code></td></tr>
+<tr><td>Microsoft (Outlook, Calendar)</td><td><code>MS_CLIENT_ID</code>, <code>MS_CLIENT_SECRET</code></td><td><code>Mail.Read</code>, <code>Calendars.Read</code>, <code>offline_access</code></td></tr>
+</tbody></table>
+<ol>
+  <li>Register an OAuth app with the provider and set its redirect URI to <code>&lt;ARIA_BASE_URL&gt;/oauth/&lt;type&gt;/callback</code>, for example <code>https://aria.example.com/oauth/zoom/callback</code>.</li>
+  <li>Set the env vars and <code>ARIA_BASE_URL</code>, then restart Aria.</li>
+  <li><code>POST /api/connectors/zoom/connect</code> now returns <code>{ redirect }</code>. Tokens are stored encrypted.</li>
+</ol>
+<h2 id="gc-behaviour">Ingest behaviour</h2>
+<ul>
+  <li>Meetings with no transcript become a <code>no_transcript</code> source you can add actions to by hand.</li>
+  <li>Newsletters, excluded labels and meetings on excluded calendars are skipped.</li>
+  <li>Calendar events add attendees to meetings, so stakeholders resolve to real people.</li>
+</ul>
+<p class="d-note">The live provider fetchers have not been verified against real accounts yet. Test with a sandbox tenant first.</p>
+</section>
+
+<section id="guide-extraction" data-title="How extraction works">
+<p class="d-eyebrow">Guides</p>
+<h1>How extraction works</h1>
+<p class="d-lead">Aria looks for commitments, requests and dated follow-ups that involve the user, and ignores everything else.</p>
+<h2 id="ex-counts">What counts</h2>
+<ul><li>The user commits ("I'll send the revised memo").</li><li>Someone asks the user, and the user doesn't refuse.</li><li>The user asks someone else and expects something back.</li><li>A dated follow-up is agreed ("Let's reconvene Friday").</li></ul>
+<h2 id="ex-ignored">What's ignored</h2>
+<ul><li>Small talk, status narration and FYI.</li><li>Hypotheticals ("we could consider…").</li><li>Other people's work that doesn't involve the user.</li></ul>
+<h2 id="ex-modes">Two engines</h2>
+<p>With <code>ANTHROPIC_API_KEY</code> set, Aria asks Claude for structured candidates, then checks each one on the server. Without it, a deterministic rule engine runs. Either way:</p>
+<ul>
+  <li>Excerpts must be a verbatim substring of the source (at least 20 characters) or the candidate is dropped.</li>
+  <li>Due dates must round-trip and their justifying words must appear in the text.</li>
+  <li>Candidates below <code>low_floor</code> are dropped. Titles the user already rejected are not suggested again.</li>
+  <li>Dates are resolved relative to the meeting's local day in the user's timezone.</li>
+</ul>
+</section>
+
+<section id="guide-assistant" data-title="Assistant grounding">
+<p class="d-eyebrow">Guides</p>
+<h1>Assistant grounding</h1>
+<p class="d-lead">The assistant answers from the user's tasks and sources only, and says so when it finds nothing.</p>
+<p>With Assistant and AI turned on, Jev (TypeSafe) decides what you asked and which task, person or meeting you meant. The answer is still built only from your own records.</p>
+<table><thead><tr><th>Ask</th><th>Behaviour</th></tr></thead><tbody>
+<tr><td>"What is pending?" · "What is overdue?" · "What is due this week?"</td><td>Lists real tasks, each cited with its title and source</td></tr>
+<tr><td>"What is open with Ananya?"</td><td>Only tasks linked to that person</td></tr>
+<tr><td>"What came out of Northwind weekly?"</td><td>Tasks and excerpts from that source</td></tr>
+<tr><td>"Draft a follow-up to Ananya about the term sheet"</td><td>A draft to copy. Aria never sends it.</td></tr>
+<tr><td>"Mark the term sheet done" · "Add a note…" · "Move … to Friday"</td><td>A proposal that needs <a href="#post-confirm">confirm</a></td></tr>
+<tr><td>"Show me Priya's emails" · "Say I promised…" · "Join the meeting"</td><td>Refused</td></tr>
+</tbody></table>
+</section>
+
+<section id="self-hosting" data-title="Self-hosting &amp; configuration">
+<p class="d-eyebrow">Guides</p>
+<h1>Self-hosting &amp; configuration</h1>
+<table><thead><tr><th>Env</th><th>Effect</th></tr></thead><tbody>
+<tr><td><code>PORT</code></td><td>HTTP port (default 4180)</td></tr>
+<tr><td><code>ARIA_DATA_DIR</code></td><td>Database, master key and digest outbox (default <code>./data</code>)</td></tr>
+<tr><td><code>ARIA_MASTER_KEY</code></td><td>64-hex master key. In production, supply it from outside the data dir.</td></tr>
+<tr><td><code>ANTHROPIC_API_KEY</code> · <code>ARIA_MODEL</code></td><td>Enable Claude extraction and assistant (default model <code>claude-opus-5-5</code>). Use a zero-retention agreement.</td></tr>
+<tr><td><code>ARIA_BASE_URL</code></td><td>Public origin for OAuth redirects</td></tr>
+<tr><td><code>TYPESAFE_API_KEY</code> · <code>ARIA_JEV_MODEL</code></td><td>Jev for users who opt in (key falls back to the jev-cli config; model defaults to <code>jev-latest</code>)</td></tr>
+<tr><td><code>ARIA_SECURE_COOKIE</code></td><td>Set when serving over HTTPS</td></tr>
+<tr><td><code>ARIA_ADMIN_EMAILS</code></td><td>Comma-separated emails granted the org admin role at signup</td></tr>
+<tr><td><code>ARIA_NO_BACKGROUND</code></td><td>Disable sync, digest and retention timers</td></tr>
+</tbody></table>
+<p>For the code architecture, see <code>DEVELOPING.md</code> in the repository.</p>
+</section>
+
+<nav class="d-pager" aria-label="Pagination"></nav>
+</main>
+
+<aside class="d-toc" aria-label="On this page"><p class="d-group">On this page</p><nav id="d-toc"></nav></aside>
+</div>
+</body>
+</html>

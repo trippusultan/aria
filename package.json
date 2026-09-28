@@ -1,0 +1,14 @@
+{
+  "name": "aria",
+  "private": true,
+  "license": "MIT",
+  "repository": "github:trippusultan/aria",
+  "version": "0.1.0",
+  "description": "Aria: personal action assistant. Meetings and email become confirmed action items against the people you spoke with.",
+  "type": "commonjs",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --no-warnings server.js",
+    "test": "node --no-warnings --test test/*.test.js"
+  }
+}

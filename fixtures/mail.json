@@ -1,0 +1,36 @@
+[
+  {
+    "external_id": "msg-5501",
+    "thread_id": "thr-5501",
+    "subject": "SAR policy for the Northwind file",
+    "sent_at": "2026-09-26T06:15:00.000Z",
+    "label": "INBOX",
+    "from": { "name": "Kavita Rao", "email": "kavita.rao@example-bank.com" },
+    "to": [{ "name": "{{USER_NAME}}", "email": "{{USER_EMAIL}}" }],
+    "cc": [],
+    "body": "Hi {{USER_FIRST}},\n\nBefore we sign off on the Northwind facility, please attach the latest SAR policy to the credit file before Friday.\n\nThanks,\nKavita"
+  },
+  {
+    "external_id": "msg-5502",
+    "thread_id": "thr-5502",
+    "subject": "Re: Kestrel covenant pack",
+    "sent_at": "2026-09-26T09:30:00.000Z",
+    "label": "SENT",
+    "from": { "name": "{{USER_NAME}}", "email": "{{USER_EMAIL}}" },
+    "to": [{ "name": "Daniel Osei", "email": "daniel.osei@kestrelfoods.com" }],
+    "cc": [],
+    "body": "Hi Daniel,\n\nCould you send the updated covenant pack with Q2 numbers by Monday? The committee needs it for the renewal.\n\nBest"
+  },
+  {
+    "external_id": "msg-5503",
+    "thread_id": "thr-5503",
+    "subject": "Your weekly fintech digest",
+    "sent_at": "2026-09-26T05:00:00.000Z",
+    "label": "PROMOTIONS",
+    "newsletter": true,
+    "from": { "name": "Fintech Weekly", "email": "news@fintechweekly.example" },
+    "to": [{ "name": "{{USER_NAME}}", "email": "{{USER_EMAIL}}" }],
+    "cc": [],
+    "body": "Top stories this week. Please click here to read more about embedded lending."
+  }
+]

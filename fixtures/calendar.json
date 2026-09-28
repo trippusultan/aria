@@ -1,0 +1,5 @@
+[
+  { "external_id": "cal-1", "title": "Northwind weekly", "start": "2026-09-26T10:40:00.000Z", "end": "2026-09-26T11:10:00.000Z", "calendar": "Work", "attendees": [{ "name": "Ananya Shah", "email": "ananya.shah@northwindcap.com" }, { "name": "Rohan Mehta", "email": "rohan.mehta@example-bank.com" }] },
+  { "external_id": "cal-2", "title": "Credit Committee", "start": "2026-09-25T08:00:00.000Z", "end": "2026-09-25T09:00:00.000Z", "calendar": "Work", "attendees": [{ "name": "Priya Nair", "email": "priya.nair@example-bank.com" }, { "name": "Amit Kulkarni", "email": "amit.k@example-bank.com" }] },
+  { "external_id": "cal-3", "title": "Treasury sync", "start": "2026-09-24T12:00:00.000Z", "end": "2026-09-24T12:30:00.000Z", "calendar": "Work", "attendees": [{ "name": "Meera Iyer", "email": "meera.iyer@example-bank.com" }] }
+]
