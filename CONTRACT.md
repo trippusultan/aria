@@ -69,8 +69,9 @@ Every content row is keyed by `user_id`; no endpoint ever returns another user's
 **Auth / account**
 - `POST /api/auth/signup {email, password, name}` → `{user}` + cookie. Password ≥ 8 chars.
 - `POST /api/auth/login {email, password}` → `{user}` + cookie · `POST /api/auth/logout`
-- `GET /api/me` → `{ user: {id, email, name, role:'member'|'admin'}, counts: {open, waiting, overdue, suggested}, demo: boolean /* a demo-mode connector is connected */, push: boolean }`
-- `GET /api/sessions` → `[{id, user_agent, ip, created_at, last_seen_at, current}]` · `DELETE /api/sessions/:id`
+- `GET /api/me` → `{ user: {id, email, name, role:'member'|'admin'}, counts: {open, waiting, overdue, suggested}, can_setup: boolean /* may configure provider OAuth apps */, demo: boolean /* sample data is loaded */, push: boolean }`
+- `GET /api/sessions` → `[{id, user_agent, ip, created_at, last_seen_at, current}]` · `DELETE /api/sessions/:sid` (64-hex id)
+- `GET /api/healthz` → `{ok}` (no auth; for load balancers)
 - `DELETE /api/account {password}` → removes every vault row for the user; audit kept (no content).
 
 **Tasks** (status ∈ `open|in_progress|waiting|completed|cancelled`; `suggested` lives only in suggestions)
@@ -126,6 +127,8 @@ Suggestion = { id, confidence, state, created_at, source: { id, type, title, sta
 - `GET /api/export/tasks.csv` · `GET /api/export/all.json` (portable bundle) — both audited, rate-limited.
 - `GET /api/audit` → own audit events `[{action, object, at, ip}]`
 - Admin (role admin, granted only to emails in `ARIA_ADMIN_EMAILS`): `GET /api/admin/seats` → `[{email, name, connectors, task_count}]`, `GET /api/admin/audit`. **No admin endpoint returns source text, excerpts, task titles or notes.**
+- Provider OAuth apps (`canSetup`: admin, or a loopback request when `ARIA_ADMIN_EMAILS` is empty): `GET /api/admin/providers` → `[{provider: 'google'|'ms'|'zoom', label, configured, source: 'env'|'app'|null, redirect_uris, console_url, steps, env}]` (never returns secrets) ·
+  `PUT /api/admin/providers/:type {client_id, client_secret}` → `{ok}` (stored encrypted with the server key; env vars take precedence) · `DELETE /api/admin/providers/:type` → `{ok}`. Both audited.
 
 ## UI contract (frontend)
 
@@ -134,6 +137,6 @@ Hash routes, filters in the query so views are bookmarkable: `#/home?status=open
 Summary strip Open · Waiting · Overdue · Suggested. Rows show title, direction, stakeholder chips (click filters home), source glyph
 (Zoom / Mail / Manual) + relative time, due date, one-click status. Suggested items visually unmistakable (badge, dashed border).
 Excerpts in a serif blockquote. Keyboard: `/` search, `g h|i|p|s` nav, `j/k` move, `1-5` status (open, in progress, waiting, completed, cancelled),
-`n` note, `a`/`e`/`r`/`m`/`z` accept/edit/reject/merge/snooze in inbox, `Ctrl/Cmd+K` assistant. Dark mode (prefers-color-scheme + toggle).
-Works at 390px. Calm, dense, adult — trading blotter, not pastel to-do. No confetti. Motion only for accept (row slides out).
+`n` note, `a`/`e`/`r`/`m`/`z` accept/edit/reject/merge/snooze in inbox, `Ctrl/Cmd+K` assistant. One dark theme ("Modern Obsidian", see DEVELOPING.md).
+Works at 390px with no sideways page scroll. The assistant lives only on `#/assistant`. Motion: 0.8s slide-up entries, off under `prefers-reduced-motion`. No confetti.
 Consent copy (PRD Appendix D) shown on signup and in Settings → Privacy.

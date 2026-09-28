@@ -15,7 +15,7 @@
   <button class="d-menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="d-side">☰</button>
   <a class="d-brand" href="#overview"><span class="logo" aria-hidden="true"></span>Aria <span>Docs</span></a>
   <label class="d-search"><span class="sr">Search docs</span><input id="d-q" type="search" placeholder="Search docs  /" autocomplete="off"></label>
-  <nav class="d-links" aria-label="Site"><a href="#api-tasks">API</a><a href="../">Open app</a><button type="button" id="d-theme" class="d-theme">Theme</button></nav>
+  <nav class="d-links" aria-label="Site"><a href="#api-tasks">API</a><a href="../">Open app</a><button type="button" id="d-theme" class="d-theme" hidden>Theme</button></nav>
 </header>
 
 <div class="d-wrap">
@@ -51,9 +51,9 @@
 <section id="overview" data-title="Overview">
 <p class="d-eyebrow">Get started</p>
 <h1>Aria developer documentation</h1>
-<p class="d-lead">Aria is a personal action assistant. It reads the meetings and mail a person connects, drafts action items with evidence, and keeps confirmed work against the people involved. This site documents its REST API and how the pieces behave.</p>
+<p class="d-lead">Aria reads the meetings and mail you connect, suggests action items with the exact quote they came from, and tracks the ones you accept against the people involved. These pages cover the REST API and how each part behaves.</p>
 <div class="d-cards">
-  <a class="d-card" href="#quickstart"><strong>Quickstart</strong><span>Sign in, connect demo data and list tasks in five requests.</span></a>
+  <a class="d-card" href="#quickstart"><strong>Quickstart</strong><span>Sign up, load sample data and list tasks in five requests.</span></a>
   <a class="d-card" href="#api-tasks"><strong>API reference</strong><span>Every endpoint, parameter and response shape.</span></a>
   <a class="d-card" href="#guide-extraction"><strong>Extraction</strong><span>What counts as an action item, and how excerpts stay verbatim.</span></a>
   <a class="d-card" href="#privacy"><strong>Privacy model</strong><span>Isolation, encryption at rest and what admins can never see.</span></a>
@@ -82,12 +82,10 @@ npm start          # http://localhost:4180</code></pre>
 <pre><code class="lang-bash">curl -c jar -b jar http://localhost:4180/api/auth/signup \
   -H 'Content-Type: application/json' \
   -d '{"email":"sam@example-bank.test","password":"choose-a-long-one","name":"Sam Carter"}'</code></pre>
-<h2 id="qs-connect">3. Connect demo sources</h2>
-<p>Without OAuth credentials, connectors run in <em>demo</em> mode and ingest the built-in fixtures. Connect a calendar first so meetings get attendees.</p>
-<pre><code class="lang-bash">for t in gcal zoom gmail; do
-  curl -c jar -b jar -X POST http://localhost:4180/api/connectors/$t/connect \
-    -H 'Content-Type: application/json' -d '{}'
-done</code></pre>
+<h2 id="qs-connect">3. Load sample data</h2>
+<p>Sample data is a set of fictional meetings, email and calendar events. It needs no provider credentials. (<code>/api/connectors/:type/connect</code> is for real accounts and returns <code>409</code> until the provider is set up.)</p>
+<pre><code class="lang-bash">curl -b jar -X POST http://localhost:4180/api/sample-data \
+  -H 'Content-Type: application/json' -d '{}'</code></pre>
 <h2 id="qs-inbox">4. Read the inbox</h2>
 <pre><code class="lang-bash">curl -b jar http://localhost:4180/api/suggestions</code></pre>
 <pre><code class="lang-json">[{
@@ -112,7 +110,7 @@ curl -b jar http://localhost:4180/api/tasks</code></pre>
 <section id="authentication" data-title="Authentication">
 <p class="d-eyebrow">Get started</p>
 <h1>Authentication</h1>
-<p class="d-lead">Aria uses session cookies. There are no API keys: every call acts as the signed-in user and can only see that user's data.</p>
+<p class="d-lead">Aria uses session cookies. There are no API keys. Every call acts as the signed-in user and sees only that user's data.</p>
 <h2 id="auth-cookie">Session cookie</h2>
 <ul>
   <li><code>POST /api/auth/signup</code> or <code>/api/auth/login</code> sets <code>aria_sid</code> (HttpOnly, SameSite=Lax; Secure when <code>ARIA_SECURE_COOKIE</code> is set).</li>
@@ -200,7 +198,7 @@ curl -b jar http://localhost:4180/api/tasks</code></pre>
 <section id="privacy" data-title="Privacy &amp; security">
 <p class="d-eyebrow">Concepts</p>
 <h1>Privacy &amp; security</h1>
-<p class="d-lead">Aria is built for regulated work. These guarantees are enforced in the API, not only in the UI.</p>
+<p class="d-lead">The API enforces these rules, not just the UI.</p>
 <ul>
   <li><strong>Isolation.</strong> Every record is keyed by user. A request for another user's record returns <code>404</code>.</li>
   <li><strong>Encryption at rest.</strong> Source text, excerpts, suggestion payloads, notes, assistant threads and connector tokens are encrypted with AES-256-GCM under a per-user key. Deleting the account destroys the key.</li>
@@ -223,9 +221,11 @@ curl -b jar http://localhost:4180/api/tasks</code></pre>
 <div class="ep" id="post-logout"><h2><span class="m post">POST</span><code>/api/auth/logout</code></h2><p>Ends the current session.</p></div>
 <div class="ep" id="get-me"><h2><span class="m get">GET</span><code>/api/me</code></h2><p>The signed-in user plus home-screen counts.</p>
 <pre><code class="lang-json">{ "user": { "id": 1, "email": "sam@example-bank.test", "name": "Sam Carter", "role": "admin" },
-  "counts": { "open": 3, "waiting": 0, "overdue": 0, "suggested": 3 }, "demo": true }</code></pre></div>
+  "counts": { "open": 3, "waiting": 0, "overdue": 0, "suggested": 3 },
+  "can_setup": true, "demo": true, "push": false }</code></pre>
+<p><code>can_setup</code> is true when this user may configure provider OAuth apps: an admin, or anyone on the server's own machine when <code>ARIA_ADMIN_EMAILS</code> is empty.</p></div>
 <div class="ep" id="get-sessions"><h2><span class="m get">GET</span><code>/api/sessions</code></h2><p>Devices signed in: <code>[{ id, user_agent, ip, created_at, last_seen_at, current }]</code>.</p></div>
-<div class="ep" id="delete-session"><h2><span class="m delete">DELETE</span><code>/api/sessions/:id</code></h2><p>Revoke one session.</p></div>
+<div class="ep" id="delete-session"><h2><span class="m delete">DELETE</span><code>/api/sessions/:sid</code></h2><p>Revoke one session. <code>:sid</code> is the 64-character id from <code>GET /api/sessions</code>.</p></div>
 <div class="ep" id="delete-account"><h2><span class="m delete">DELETE</span><code>/api/account</code></h2><p>Body <code>{ password }</code>. Removes every task, note, source, person and connector token for the user and destroys their encryption key. Audit events are kept without content.</p></div>
 </section>
 
@@ -347,30 +347,38 @@ curl -b jar http://localhost:4180/api/tasks</code></pre>
 <div class="ep" id="get-csv"><h2><span class="m get">GET</span><code>/api/export/tasks.csv</code></h2><p>All tasks as CSV. Cells that start with <code>= + - @</code> are escaped against spreadsheet formula injection.</p></div>
 <div class="ep" id="get-json"><h2><span class="m get">GET</span><code>/api/export/all.json</code></h2><p>A portable bundle of the user's data.</p></div>
 <div class="ep" id="get-audit"><h2><span class="m get">GET</span><code>/api/audit</code></h2><p>The user's own audit trail: <code>[{ action, object, at, ip }]</code>.</p></div>
-<div class="ep" id="get-admin"><h2><span class="m get">GET</span><code>/api/admin/seats</code> · <code>/api/admin/audit</code></h2><p>Admins only. Seats with connector status and task <em>counts</em>, and the admin-action audit. No content, ever.</p></div>
+<div class="ep" id="get-admin"><h2><span class="m get">GET</span><code>/api/admin/seats</code> · <code>/api/admin/audit</code></h2><p>Admins only. Seats with connector status and task <em>counts</em>, and the admin-action audit. Never any content.</p></div>
+<div class="ep" id="get-providers"><h2><span class="m get">GET</span><code>/api/admin/providers</code></h2><p>Provider OAuth apps: <code>[{ provider, label, configured, source, redirect_uris, console_url, steps, env }]</code>. <code>provider</code> is <code>google</code>, <code>ms</code> or <code>zoom</code>. <code>source</code> is <code>env</code> or <code>app</code> (pasted in Settings). Requires <code>can_setup</code>.</p></div>
+<div class="ep" id="put-provider"><h2><span class="m patch">PUT</span><code>/api/admin/providers/:type</code></h2><p>Body <code>{ client_id, client_secret }</code>. Stores the app encrypted with the server key; no restart. Every user can then connect that provider in one click. Environment variables, when set, take precedence. Audited.</p>
+<pre><code class="lang-bash">curl -b jar -X PUT http://localhost:4180/api/admin/providers/google \
+  -H 'Content-Type: application/json' -d '{"client_id":"…","client_secret":"…"}'</code></pre></div>
+<div class="ep" id="delete-provider"><h2><span class="m delete">DELETE</span><code>/api/admin/providers/:type</code></h2><p>Remove a pasted app. Audited.</p></div>
 </section>
 
 <section id="guide-connectors" data-title="Connecting Zoom, Gmail &amp; Outlook">
 <p class="d-eyebrow">Guides</p>
 <h1>Connecting Zoom, Gmail &amp; Outlook</h1>
-<p class="d-lead">Unconfigured connectors show setup steps in Settings. Sample data is loaded only when you ask for it.</p>
+<p class="d-lead">Each provider needs an OAuth app registered once per server. After that, every user connects in one click.</p>
 <table><thead><tr><th>Provider</th><th>Env vars</th><th>Scopes (read-only)</th></tr></thead><tbody>
 <tr><td>Zoom</td><td><code>ZOOM_CLIENT_ID</code>, <code>ZOOM_CLIENT_SECRET</code></td><td><code>cloud_recording:read</code>, <code>user:read</code></td></tr>
 <tr><td>Google (Gmail, Calendar)</td><td><code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code></td><td><code>gmail.readonly</code>, <code>calendar.readonly</code></td></tr>
 <tr><td>Microsoft (Outlook, Calendar)</td><td><code>MS_CLIENT_ID</code>, <code>MS_CLIENT_SECRET</code></td><td><code>Mail.Read</code>, <code>Calendars.Read</code>, <code>offline_access</code></td></tr>
 </tbody></table>
+<h2 id="gc-setup">Set up a provider</h2>
 <ol>
-  <li>Register an OAuth app with the provider and set its redirect URI to <code>&lt;ARIA_BASE_URL&gt;/oauth/&lt;type&gt;/callback</code>, for example <code>https://aria.example.com/oauth/zoom/callback</code>.</li>
-  <li>Set the env vars and <code>ARIA_BASE_URL</code>, then restart Aria.</li>
-  <li><code>POST /api/connectors/zoom/connect</code> now returns <code>{ redirect }</code>. Tokens are stored encrypted.</li>
+  <li>Open <strong>Settings → Connections</strong> as an admin. On a fresh install with no <code>ARIA_ADMIN_EMAILS</code>, anyone browsing from the server's own machine counts.</li>
+  <li>Expand the provider's setup guide. It lists the console steps and the exact redirect URIs (<code>&lt;ARIA_BASE_URL&gt;/oauth/&lt;type&gt;/callback</code>) to paste.</li>
+  <li>Paste the client ID and secret and save. They are stored encrypted with the server key and take effect immediately (<a href="#put-provider">PUT /api/admin/providers/:type</a>).</li>
 </ol>
+<p>Alternatively set the env vars above and restart. Env vars win over pasted values.</p>
+<p>After setup, <code>POST /api/connectors/:type/connect</code> returns <code>{ redirect }</code> to the provider's consent screen. Tokens are stored encrypted under the user's key.</p>
 <h2 id="gc-behaviour">Ingest behaviour</h2>
 <ul>
   <li>Meetings with no transcript become a <code>no_transcript</code> source you can add actions to by hand.</li>
   <li>Newsletters, excluded labels and meetings on excluded calendars are skipped.</li>
   <li>Calendar events add attendees to meetings, so stakeholders resolve to real people.</li>
 </ul>
-<p class="d-note">The live provider fetchers have not been verified against real accounts yet. Test with a sandbox tenant first.</p>
+<p class="d-note">The provider fetchers have not been run against real accounts yet. Try a sandbox tenant first.</p>
 </section>
 
 <section id="guide-extraction" data-title="How extraction works">
@@ -420,6 +428,10 @@ curl -b jar http://localhost:4180/api/tasks</code></pre>
 <tr><td><code>ARIA_ADMIN_EMAILS</code></td><td>Comma-separated emails granted the org admin role at signup</td></tr>
 <tr><td><code>ARIA_NO_BACKGROUND</code></td><td>Disable sync, digest and retention timers</td></tr>
 </tbody></table>
+<h2 id="sh-deploy">Deploy</h2>
+<pre><code class="lang-bash">docker build -t aria . &amp;&amp; docker run -p 4180:4180 -v aria-data:/data \
+  -e ARIA_MASTER_KEY=&lt;64 hex&gt; -e ARIA_ADMIN_EMAILS=you@company.com -e ARIA_SECURE_COOKIE=1 aria</code></pre>
+<p>Serve it behind HTTPS. <code>GET /api/healthz</code> returns <code>{"ok":true}</code> without auth, for load balancers.</p>
 <p>For the code architecture, see <code>DEVELOPING.md</code> in the repository.</p>
 </section>
 

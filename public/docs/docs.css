@@ -80,3 +80,30 @@ body.docs { font-size: 15px; line-height: 1.6; }
   .d-cards { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .d-side { transition: none; } }
+
+/* Obsidian: match the app (serif italic headlines, mono uppercase system text, glass surfaces, silver accents) */
+.d-top { background: rgba(8, 8, 8, .6); backdrop-filter: blur(24px); }
+.d-brand { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .3em; gap: 12px; }
+.d-brand span { letter-spacing: .3em; }
+.d-links a, .d-group, .d-eyebrow, .d-main th, .d-copy { font-family: var(--mono); text-transform: uppercase; letter-spacing: .2em; font-size: 10.5px; }
+.d-eyebrow { color: var(--muted); margin-bottom: 14px; }
+.d-main { padding: 56px 64px 96px; }
+.d-main h1 { font: italic 400 clamp(40px, 5vw, 64px)/.9 var(--headline); letter-spacing: -.03em; color: #fff; margin-bottom: 20px; }
+.d-main h2 { font-family: var(--sans); font-weight: 600; }
+.d-lead { font-size: 18px; line-height: 1.55; }
+.d-main pre, .d-card, .d-pager a, .d-search input { background: rgba(255, 255, 255, .02); border: 1px solid var(--line); border-radius: 16px; }
+.d-search input { border-radius: 999px; height: 36px; padding: 0 16px; }
+.d-main pre { padding: 18px 20px; }
+.d-main code { background: rgba(255, 255, 255, .05); }
+.d-card { padding: 20px 22px; transition: border-color .3s var(--ease), transform .3s var(--ease); }
+.d-card:hover { border-color: rgba(255, 255, 255, .3); transform: translateY(-1px); }
+.d-side a { border-radius: 10px; }
+.d-side a[aria-current="page"] { background: rgba(255, 255, 255, .06); color: #fff; }
+.d-toc a.on { border-color: #fff; }
+.d-note { border-left-color: rgba(255, 255, 255, .4); background: rgba(255, 255, 255, .03); border-radius: 0 12px 12px 0; }
+.docs a { color: #fff; text-decoration-color: rgba(255, 255, 255, .3); }
+.m { border: 1px solid var(--line-strong); background: none !important; color: var(--text) !important; border-radius: 999px; padding: 3px 10px; letter-spacing: .12em; }
+.m.get { background: var(--silver) !important; color: #080808 !important; border-color: transparent; }
+.ep { padding-bottom: 24px; }
+@media (max-width: 760px) { .d-main { padding: 32px 16px 64px; } .d-main h1 { font-size: 40px; } }
+.d-main > section { scroll-margin-top: 56px; } .d-main h1 { scroll-margin-top: 72px; }

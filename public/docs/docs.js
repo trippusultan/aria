@@ -45,7 +45,7 @@ function show() {
   // TOC for this page.
   const toc = $('#d-toc'); toc.textContent = '';
   const heads = $$('h2', sec);
-  for (const h of heads) toc.append(Object.assign(document.createElement('a'), { href: '#' + h.id, textContent: h.textContent.replace(/^(GET|POST|PATCH|DELETE)+/, '').trim() }));
+  for (const h of heads) toc.append(Object.assign(document.createElement('a'), { href: '#' + h.id, textContent: h.textContent.replace(/^(GET|POST|PUT|PATCH|DELETE)+/, '').trim() }));
   observer?.disconnect();
   observer = new IntersectionObserver((es) => {
     for (const e of es) if (e.isIntersecting) for (const a of $$('a', toc)) a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id);
